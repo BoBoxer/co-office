@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html style="height: 100%;">
+<head>
+    <title>ONLYOFFICE Api 文档</title>
+    <meta charset="UTF-8">
+</head>
+<body style="height: 100%; margin: 0;">
+<div id="placeholder"></div>
+<!--<script type="text/javascript" src="http://192.168.2.167:40081/web-apps/apps/api/documents/api.js"></script>-->
+<!--<script type="text/javascript" src="http://192.168.128.77:21281/sx-office/web-apps/apps/api/documents/api.js"></script>-->
+<script type="text/javascript" src="http://192.168.2.167:10008/sx-office/web-apps/apps/api/documents/api.js"></script>
+<script>
+
+    if (!localStorage.getItem('off-token')) {
+        window.location.href = 'login.html';
+    }
+
+    const url = new URL(window.location.href);
+    const fileId = url.searchParams.get('fileId');//'的值
+    const fileUrl = url.searchParams.get('fileUrl');//'的值
+    const fileType = url.searchParams.get('fileType'); // 获取参数'age'的值
+    const title = url.searchParams.get('title'); // 获取参数'age'的值
+    const mode = url.searchParams.get('mode'); // 获取参数'age'的值
+    const documentType = (fileType === 'xls' || fileType === 'xlsx') ? 'cell' : 'word'
+    //onsole.log(, age); // 输出: John 30
+    new DocsAPI.DocEditor("placeholder", {
+        "document": {
+            "fileType": fileType,
+            "key": fileId,
+            "title": title,
+            //"url": "http://project.zncmjt.com:81/sx-api/profile/upload/2024/09/06/%EF%BC%8814%E5%8F%B7%EF%BC%89%E5%85%B3%E4%BA%8E%E5%81%9A%E5%A5%BD2022%E5%B9%B4%E5%BA%A6%E7%9C%81%E7%BA%A7%E6%96%87%E5%8C%96%E4%BA%8B%E4%B8%9A%E5%8F%91%E5%B1%95%E4%B8%93%E9%A1%B9%E8%B5%84%E9%87%91%E9%A1%B9%E7%9B%AE%E7%94%B3%E6%8A%A5%E7%9A%84%E9%80%9A%E7%9F%A5_20240906180628A003.doc"
+            "url": fileUrl,
+            "permissions":{
+                "comment": true,
+            }
+        },
+        "documentType": documentType,
+        "editorConfig": {
+            "mode": mode,
+            "lang": "zh",
+            "canCoAuthoring": true,
+            "callbackUrl": "http://192.168.2.23:8081/api/file/callback",
+            "customization": {
+                "anonymous": {
+                    "request": false
+                },
+                "forcesave": true,
+                "autosave": false,
+                "file": { // menu file
+                    "close": true,
+                    "settings": false, // advanced settings
+                    "info": false, // document info
+                    "save": true, // save button
+                },
+                "header": {
+                    "users": true,// users list button
+                    "save": true,// save button
+                    "editMode": true,// change mode button
+                },
+            },
+            "user": {
+                "id": localStorage.getItem('off-username'),
+                "name": localStorage.getItem('off-username')
+            },
+            "coEditing": {
+                "mode": 'fast',
+                "change": false
+            }
+
+        },
+        "height": "100%",
+        "width": "100%"
+    });
+</script>
+</body>
+</html>

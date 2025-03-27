@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>用户登录</title>
+    <meta charset="UTF-8"> <!-- 添加这行 -->
+    <style>        .login-container {
+        width: 300px;
+        margin: 100px auto;
+        padding: 20px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+    }
+    .form-group { margin-bottom: 15px; }
+    label { display: block; margin-bottom: 5px; }
+    input { width: 100%; padding: 8px; }
+    button {
+        width: 100%;
+        padding: 10px;
+        background-color: #4CAF50;
+        color: white;
+        border: none;
+        cursor: pointer;
+    }
+    </style>
+</head>
+<body>
+<div class="login-container">
+    <h2>用户登录</h2>
+    <form id="loginForm">
+        <div class="form-group">
+            <label>用户名:</label>
+            <input type="text" id="username" required>
+        </div>
+        <div class="form-group">
+            <label>密码:</label>
+            <input type="password" id="password" required>
+        </div>
+        <button type="submit">登录</button>
+    </form>
+</div>
+
+<script>
+    function encodePwd(pwdStr) {
+
+        var encodedData =window.btoa(unescape(encodeURIComponent(pwdStr)))
+        if(encodedData.length>3){
+            var lp = encodedData.substr(0,3);
+            var rp = encodedData.substr(3,encodedData.length);
+            return  rp+lp;
+        }
+        return "xsigoq212ng12"
+    }
+    document.getElementById('loginForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        const user = {
+            username: document.getElementById('username').value,
+            password: encodePwd(document.getElementById('password').value)
+        };
+
+        // 调用后端接口
+        fetch('/api/login', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(user)
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.token) {
+                    localStorage.setItem('off-token', data.token);
+                    localStorage.setItem('off-username', user.username);
+                    window.location.href = 'index.html'; // 跳转到首页
+                } else {
+                    alert('登录失败: ' + data.message);
+                }
+            })
+            .catch(error => console.error('Error:', error));
+    });
+</script>
+</body>
+</html>

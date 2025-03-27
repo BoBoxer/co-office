@@ -1,0 +1,311 @@
+<html xmlns:th="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="UTF-8"> <!-- 添加这行 -->
+</head>
+<body>
+
+<!-- 在HTML文件的合适位置添加以下代码 -->
+<div class="upload-container">
+    <!-- 表单部分 -->
+    <form id="uploadForm" th:action="@{/api/file/upload}" method="post" enctype="multipart/form-data">
+        <!-- 隐藏的文件输入 -->
+        <input type="file" id="fileInput" name="file" style="display: none;" onchange="handleFileSelect(event)">
+        <!-- 自定义上传按钮 -->
+        <button type="button" class="upload-btn" onclick="document.getElementById('fileInput').click()">
+            <i class="fa fa-upload"></i> 上传文件
+        </button>
+
+        <!-- 文件名称显示 -->
+        <span id="fileName" class="file-name"></span>
+    </form>
+
+    <!-- 上传结果提示
+    <div id="uploadResult" class="result-message"></div>
+    <button type="button" class="upload-btn" onclick="jumpToEdit()">
+        <i class="fa fa-upload"></i> 编辑
+    </button> -->
+</div>
+
+<!-- 文件列表表格 -->
+<div class="file-table-container">
+    <h3>文件列表</h3>
+    <table id="fileTable">
+        <thead>
+        <tr>
+            <th>文件ID</th>
+            <th>文件名</th>
+            <th>创建时间</th>
+            <th>修改时间</th>
+            <th>操作</th>
+        </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+</div>
+
+
+
+<!-- 添加JavaScript交互 -->
+<script>
+    if(!localStorage.getItem('off-token')){
+        window.location.href = 'login.html';
+    }
+
+    var title = "";
+    var fileUrl = "";
+
+    function handleFileSelect(event) {
+        const file = event.target.files[0];
+        if (file) {
+            // 显示文件名
+            document.getElementById('fileName').textContent = file.name;
+
+            // 立即提交表单
+            const formData = new FormData();
+            formData.append('file', file);
+
+            fetch('/api/file/upload', {
+                method: 'POST',
+                headers:{
+                    // 'Content-Type': 'multipart/form-data',
+                    'Authorization':localStorage.getItem('off-token')
+                },
+                body: formData
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        if(response.status===401){
+                            localStorage.removeItem('off-token')
+                            window.location.href = 'login.html';
+                        }else{
+                            throw new Error(`HTTP error! status: ${response.status}`);
+                        }
+                    }
+                    return response.json(); // 修改为解析JSON
+                })
+                .then(result => {
+
+                    //showResult(result.message, 'success');
+                    // 如果需要显示服务端返回的文件名
+                    document.getElementById('fileName').textContent = result.fileTitle;
+
+                    title = result.title;
+                    fileUrl = result.fileUrl;
+
+                    fetchListFile();
+
+                })
+                .catch(error => {
+                    //showResult(error.message, 'error');
+                    console.error('Error:', error);
+                });
+        }
+    }
+
+    function showResult(message, type) {
+        const resultDiv = document.getElementById('uploadResult');
+        resultDiv.textContent = message;
+        resultDiv.className = `result-message ${type}`;
+    }
+
+    function jumpToEdit() {
+
+
+        var destination = window.location.origin + '/office-online.html' +
+            '?fileUrl=' + window.location.origin + "/api/file/download/" + fileUrl +
+            '&fileType=' + title.substring(title.indexOf(".") + 1) +
+            '&title=' + title.substring(0, title.indexOf("."))
+        window.open(destination)
+    }
+
+    function fetchListFile() {
+        fetch('/api/file/listFile', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization':localStorage.getItem('off-token')
+            },
+            body: JSON.stringify({
+                page: 1,
+                pageSize: 10
+            }) // 空请求体
+        })
+            .then(response => {
+                if (!response.ok) {
+                    if(response.status===401){
+                        localStorage.removeItem('off-token')
+                        window.location.href = 'login.html';
+                    }else{
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+
+                }
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json(); // 修改为解析JSON
+            })
+            .then(data => {
+                renderFileTable(data);
+            })
+            .catch(error => {
+                //showResult('请求失败: ' + error.message, 'error');
+            });
+    }
+
+    function renderFileTable(files) {
+        const tbody = document.querySelector('#fileTable tbody');
+        tbody.innerHTML = ''; // 清空现有内容
+
+        files.forEach(file => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+            <td>${file.fileId}</td>
+            <td>${file.fileTitle}</td>
+            <td>${file.createTime}</td>
+            <td>${file.lastModifyTime}</td>
+            <td>
+                <a class="download-btn" href="/office-online.html?fileId=${file.fileId}&fileUrl=${window.location.origin}/api/file/download/${file.fileUrl}&fileType=${file.fileTitle.substring(file.fileTitle.indexOf(".") + 1)}&title=${file.fileTitle.substring(0, file.fileTitle.indexOf("."))}&mode=view" target="_blank">
+                   查看
+                </a>
+                <a class="download-btn" href="/api/file/download/${file.fileUrl}">下载</a>
+                <a class="download-btn" href="/office-online.html?fileId=${file.fileId}&fileUrl=${window.location.origin}/api/file/download/${file.fileUrl}&fileType=${file.fileTitle.substring(file.fileTitle.indexOf(".") + 1)}&title=${file.fileTitle.substring(0, file.fileTitle.indexOf("."))}&mode=edit" target="_blank">
+                   编辑
+                </a>
+                <a class="download-btn" onclick="deleteFile('${file.fileId}')">删除</a>
+            </td>
+        `;
+            tbody.appendChild(tr);
+        });
+    }
+
+
+    // 页面加载时获取文件列表
+    document.addEventListener('DOMContentLoaded',fetchListFile );
+
+
+
+    // var destination = window.location.origin + '/office-online.html' +
+    //     '?fileUrl=' + window.location.origin + "/api/file/download/" + fileUrl +
+    //     '&fileType=' + title.substring(title.indexOf(".") + 1) +
+    //     '&title=' + title.substring(0, title.indexOf("."))
+
+    // 文件大小格式化函数
+    function formatFileSize(bytes) {
+        if (bytes === 0) return '0 B';
+        const k = 1024;
+        const sizes = ['B', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
+    function deleteFile(fileId){
+        debugger
+        fetch(`/api/file/delete/${fileId}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization':localStorage.getItem('off-token')
+            }
+        })
+            .then(response => {
+                if (!response.ok) {
+                    if(response.status===401){
+                        localStorage.removeItem('off-token')
+                        window.location.href = 'login.html';
+                    }else{
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+
+                }
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json(); // 修改为解析JSON
+            })
+            .then(data => {
+                renderFileTable(data);
+            })
+            .catch(error => {
+                //showResult('请求失败: ' + error.message, 'error');
+            });
+    }
+</script>
+</body>
+
+<!-- 添加样式 -->
+<style>.upload-container {
+    margin: 20px;
+    padding: 15px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.upload-btn {
+    background-color: #409eff;
+    color: white;
+    padding: 8px 15px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.upload-btn:hover {
+    background-color: #66b1ff;
+}
+
+.file-name {
+    margin-left: 10px;
+    color: #666;
+}
+
+.result-message {
+    margin-top: 10px;
+    padding: 8px;
+    border-radius: 4px;
+}
+
+.success {
+    background-color: #f0f9eb;
+    color: #67c23a;
+}
+
+.error {
+    background-color: #fef0f0;
+    color: #f56c6c;
+}
+
+.file-table-container {
+    margin: 20px;
+    padding: 15px;
+}
+
+#fileTable {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+}
+
+#fileTable th, #fileTable td {
+    border: 1px solid #ebeef5;
+    padding: 12px;
+    text-align: left;
+}
+
+#fileTable th {
+    background-color: #f5f7fa;
+}
+
+#fileTable tr:hover {
+    background-color: #fafafa;
+}
+
+.download-btn {
+    color: #409eff;
+    cursor: pointer;
+    text-decoration: none;
+}
+
+</style>
+</html>
