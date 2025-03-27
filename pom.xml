@@ -80,7 +80,7 @@
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <version>${spring-boot.version}</version>
                 <configuration>
-                    <mainClass>com.example.shareoffice.ShareofficeApplication</mainClass>
+                    <mainClass>com.example.shareoffice.ShareOfficeApplication</mainClass>
                     <skip>true</skip>
                 </configuration>
                 <executions>
