@@ -1,6 +1,7 @@
 package com.example.shareoffice.my.controller;
 
 import com.example.shareoffice.vo.Callback;
+import com.example.shareoffice.vo.LocalFilePage;
 import com.example.shareoffice.vo.LocalFileInfo;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -77,13 +78,20 @@ public class FileController {
     }
 
     @PostMapping("/listFile")
-    public ResponseEntity<List<LocalFileInfo>> listFile() {
+    public ResponseEntity<LocalFilePage> listFile(@RequestBody LocalFilePage localFilePage) {
         List<LocalFileInfo> fileList = localFileInfoList
                 .stream()
                 .filter(localFileInfo -> !localFileInfo.getDeleteStatus())
                 .sorted((o1, o2) -> o2.getLastModifyTime().compareTo(o1.getLastModifyTime()))
                 .collect(Collectors.toList());
-        return ResponseEntity.ok(fileList);
+
+        localFilePage.setTotal(fileList.size());
+
+        int startIndex =(localFilePage.getPage()-1)* localFilePage.getLimit();
+        int endIndex = (localFilePage.getPage())* localFilePage.getLimit();
+        localFilePage.setDataList(fileList.subList(Math.min(startIndex, fileList.size()), Math.min(endIndex, fileList.size())));
+
+        return ResponseEntity.ok(localFilePage);
     }
 
     // 文件上传

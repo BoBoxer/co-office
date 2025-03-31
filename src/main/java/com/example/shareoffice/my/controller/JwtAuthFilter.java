@@ -22,11 +22,7 @@ public class JwtAuthFilter implements Filter {
     private static final List<String> EXEMPT_PATHS = Arrays.asList(
             "/api/login",
             "/api/file/download",
-            "/api/file/callback",
-            "/login.html",
-            "/index.html",
-            "/favicon.ico",
-            "/office-online.html"
+            "/api/file/callback"
     );
 
 
@@ -38,7 +34,7 @@ public class JwtAuthFilter implements Filter {
         String path = request.getRequestURI();
 
         // 豁免路径检查
-        if (isExemptPath(path)) {
+        if (isExemptPath(request.getMethod(),path)) {
             chain.doFilter(req, res);
             return;
         }
@@ -53,7 +49,13 @@ public class JwtAuthFilter implements Filter {
         chain.doFilter(req, res);
     }
 
-    private boolean isExemptPath(String path) {
+    private boolean isExemptPath(String method,String path) {
+        if(method.equalsIgnoreCase("get")){
+            if(path.endsWith(".js") || path.endsWith(".html") || path.endsWith(".css") || path.endsWith(".ico")){
+                return true;
+            }
+        }
+
         return EXEMPT_PATHS.stream().anyMatch(path::startsWith);
     }
 

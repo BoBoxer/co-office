@@ -1,141 +1,188 @@
 <html xmlns:th="http://www.w3.org/1999/xhtml">
 <head>
     <meta charset="UTF-8"> <!-- 添加这行 -->
+    <link href="//unpkg.com/layui@2.10.1/dist/css/layui.css" rel="stylesheet">
+
 </head>
 <body>
-
+<script src="./layui.js"></script>
 <!-- 在HTML文件的合适位置添加以下代码 -->
-<div class="upload-container">
-    <!-- 表单部分 -->
-    <form id="uploadForm" th:action="@{/api/file/upload}" method="post" enctype="multipart/form-data">
-        <!-- 隐藏的文件输入 -->
-        <input type="file" id="fileInput" name="file" style="display: none;" onchange="handleFileSelect(event)">
-        <!-- 自定义上传按钮 -->
-        <button type="button" class="upload-btn" onclick="document.getElementById('fileInput').click()">
-            <i class="fa fa-upload"></i> 上传文件
+<!--<div class="upload-container">-->
+<!--    &lt;!&ndash; 表单部分 &ndash;&gt;-->
+<!--    <form id="uploadForm" th:action="@{/api/file/upload}" method="post" enctype="multipart/form-data">-->
+<!--        &lt;!&ndash; 隐藏的文件输入 &ndash;&gt;-->
+<!--        <input type="file" id="fileInput" name="file" style="display: none;" onchange="handleFileSelect(event)">-->
+<!--        &lt;!&ndash; 自定义上传按钮 &ndash;&gt;-->
+<!--        <button type="button" class="upload-btn" onclick="document.getElementById('fileInput').click()">-->
+<!--            <i class="fa fa-upload"></i> 上传文件-->
+<!--        </button>-->
+
+<!--        &lt;!&ndash; 文件名称显示 &ndash;&gt;-->
+<!--        <span id="fileName" class="file-name"></span>-->
+<!--    </form>-->
+<!--</div>-->
+
+<table class="layui-hide" id="ID-table-demo-data" lay-filter="test"></table>
+
+<script type="text/html" id="toolbarDemo"> <!--lay-event="getCheckData"-->
+    <div class="layui-btn-container">
+        <!--<button class="layui-btn layui-btn-sm" >上传</button>-->
+        <button type="button"
+                class="layui-btn demo-class-accept"
+                lay-options="{accept: 'file',exts: 'doc|docx|xls|xlsx'}">
+            <i class="layui-icon layui-icon-upload"></i>
+            上传
         </button>
+    </div>
+</script>
 
-        <!-- 文件名称显示 -->
-        <span id="fileName" class="file-name"></span>
-    </form>
 
-    <!-- 上传结果提示
-    <div id="uploadResult" class="result-message"></div>
-    <button type="button" class="upload-btn" onclick="jumpToEdit()">
-        <i class="fa fa-upload"></i> 编辑
-    </button> -->
-</div>
-
-<!-- 文件列表表格 -->
-<div class="file-table-container">
-    <h3>文件列表</h3>
-    <table id="fileTable">
-        <thead>
-        <tr>
-            <th>文件ID</th>
-            <th>文件名</th>
-            <th>创建时间</th>
-            <th>修改时间</th>
-            <th>操作</th>
-        </tr>
-        </thead>
-        <tbody></tbody>
-    </table>
-</div>
-
+<script type="text/html" id="templet-demo-theads-tool">
+    <div class="layui-clear-space">
+        <a class="layui-btn layui-btn-xs" lay-event="download">下载</a>
+        <a class="layui-btn layui-btn-xs" lay-event="view">查看</a>
+        <a class="layui-btn layui-btn-xs" lay-event="edit">编辑</a>
+        <a class="layui-btn layui-btn-xs" lay-event="delete">删除</a>
+    </div>
+</script>
 
 
 <!-- 添加JavaScript交互 -->
 <script>
-    if(!localStorage.getItem('off-token')){
+    if (!localStorage.getItem('off-token')) {
         window.location.href = 'login.html';
     }
+    const table = layui.table;
+    const upload = layui.upload;
+    const layer = layui.layer;
 
-    var title = "";
-    var fileUrl = "";
+    layui.use('table', function () {
+        //var table = layui.table;
 
-    function handleFileSelect(event) {
-        const file = event.target.files[0];
-        if (file) {
-            // 显示文件名
-            document.getElementById('fileName').textContent = file.name;
+        // 已知数据渲染
+        var inst = table.render({
+            id: 'fileListTable-id',
+            elem: '#ID-table-demo-data',
+            url: '/api/file/listFile', // 对应的数据接口，这边直接是请求的json文件
+            method: 'post',
+            headers: {
+                'Authorization': localStorage.getItem('off-token')
+            },
+            contentType: 'application/json',
+            where: {pageNo: 1, pageSize: 3},
+            parseData: function (res) { // res 即为原始返回的数据
+                return {
+                    "code": 0, // 解析接口状态
+                    "msg": res.message, // 解析提示文本
+                    "count": res.total, // 解析数据长度
+                    "data": res.dataList // 解析数据列表
+                };
+            },
+            toolbar: '#toolbarDemo',
+            defaultToolbar: ['filter', 'exports'],
+            cols: [[ //标题栏
+                {field: 'fileId', title: 'ID', width: 300, sort: false},
+                {field: 'fileTitle', title: '名称', width: 300},
+                {field: 'createTime', title: '创建时间', width: 180},
+                {field: 'lastModifyTime', title: '修改时间', width: 180},
+                {fixed: 'right', width: 260, title: '操作', templet: '#templet-demo-theads-tool'}
+            ]],
+            //data: datas,
+            //skin: 'line', // 表格风格
+            //even: true,
+            page: true, // 是否显示分页
+            limits: [5, 10, 15],
+            limit: 5 // 每页默认显示的数量
+        });
 
-            // 立即提交表单
-            const formData = new FormData();
-            formData.append('file', file);
-
-            fetch('/api/file/upload', {
-                method: 'POST',
-                headers:{
-                    // 'Content-Type': 'multipart/form-data',
-                    'Authorization':localStorage.getItem('off-token')
-                },
-                body: formData
-            })
-                .then(response => {
-                    if (!response.ok) {
-                        if(response.status===401){
-                            localStorage.removeItem('off-token')
-                            window.location.href = 'login.html';
-                        }else{
-                            throw new Error(`HTTP error! status: ${response.status}`);
-                        }
-                    }
-                    return response.json(); // 修改为解析JSON
-                })
-                .then(result => {
-
-                    //showResult(result.message, 'success');
-                    // 如果需要显示服务端返回的文件名
-                    document.getElementById('fileName').textContent = result.fileTitle;
-
-                    title = result.title;
-                    fileUrl = result.fileUrl;
-
-                    fetchListFile();
-
-                })
-                .catch(error => {
-                    //showResult(error.message, 'error');
-                    console.error('Error:', error);
-                });
-        }
-    }
-
-    function showResult(message, type) {
-        const resultDiv = document.getElementById('uploadResult');
-        resultDiv.textContent = message;
-        resultDiv.className = `result-message ${type}`;
-    }
-
-    function jumpToEdit() {
+        table.on('tool(test)', function (obj) { // 双击 toolDouble
+            var fileObj = obj.data; // 得到字段
+            if (obj.event === 'download') {
+                downloadFile(fileObj.fileUrl)
+            } else if (obj.event === 'view') {
+                openViewPage(fileObj)
+            } else if (obj.event === 'edit') {
+                openEditPage(fileObj)
+            } else if (obj.event === 'delete') {
+                deleteFileObj(obj, fileObj)
+            }
+        });
 
 
-        var destination = window.location.origin + '/office-online.html' +
-            '?fileUrl=' + window.location.origin + "/api/file/download/" + fileUrl +
-            '&fileType=' + title.substring(title.indexOf(".") + 1) +
-            '&title=' + title.substring(0, title.indexOf("."))
+        // 工具栏事件
+        table.on('toolbar(test)', function(obj){
+            debugger
+            var id = obj.config.id;
+            var checkStatus = table.checkStatus(id);
+            var othis = lay(this);
+            switch(obj.event){
+                case 'getCheckData':
+                    var data = checkStatus.data;
+                    layer.alert(layui.util.escape(JSON.stringify(data)));
+                    break;
+            };
+        });
+
+        upload.render({
+            elem: '.demo-class-accept', // 绑定多个元素
+            url: '/api/file/upload', // 此处配置你自己的上传接口即可
+            method: 'post',
+            headers: {
+                'Authorization': localStorage.getItem('off-token')
+            },
+            accept: 'file', // 普通文件
+            done: function(res){
+                //debugger
+                layer.msg('上传成功');
+                console.log(res);
+                table.reload('fileListTable-id')
+            }
+        });
+    });
+
+
+    function downloadFile(fileUrl) {
+        var destination = window.location.origin + "/api/file/download/" + fileUrl
         window.open(destination)
     }
 
-    function fetchListFile() {
-        fetch('/api/file/listFile', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization':localStorage.getItem('off-token')
-            },
-            body: JSON.stringify({
-                page: 1,
-                pageSize: 10
-            }) // 空请求体
-        })
-            .then(response => {
+    function openViewPage(fileObj) {
+        var destination = "/office-online.html?" +
+            "fileId=" + fileObj.fileId +
+            "&fileUrl=" + window.location.origin + "/api/file/download/" + fileObj.fileUrl +
+            "&fileType=" + fileObj.fileTitle.substring(fileObj.fileTitle.indexOf(".") + 1) +
+            "&title=" + fileObj.fileTitle.substring(0, fileObj.fileTitle.indexOf(".")) +
+            "&mode=view"
+        window.open(destination)
+    }
+
+    function openEditPage(fileObj) {
+        var destination = "/office-online.html?" +
+            "fileId=" + fileObj.fileId +
+            "&fileUrl=" + window.location.origin + "/api/file/download/" + fileObj.fileUrl +
+            "&fileType=" + fileObj.fileTitle.substring(fileObj.fileTitle.indexOf(".") + 1) +
+            "&title=" + fileObj.fileTitle.substring(0, fileObj.fileTitle.indexOf(".")) +
+            "&mode=edit"
+        window.open(destination)
+    }
+
+    function deleteFileObj(obj, fileObj) {
+        layer.confirm('真的删除行 [' + fileObj.fileTitle + '] 么', function (index) {
+            //obj.del(); // 删除对应行（tr）的DOM结构
+            //layer.close(index);
+            // 向服务端发送删除指令
+            fetch(`/api/file/delete/${fileObj.fileId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': localStorage.getItem('off-token')
+                }
+            }).then(response => {
                 if (!response.ok) {
-                    if(response.status===401){
+                    if (response.status === 401) {
                         localStorage.removeItem('off-token')
                         window.location.href = 'login.html';
-                    }else{
+                    } else {
                         throw new Error(`HTTP error! status: ${response.status}`);
                     }
 
@@ -144,92 +191,15 @@
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
                 return response.json(); // 修改为解析JSON
-            })
-            .then(data => {
-                renderFileTable(data);
-            })
-            .catch(error => {
+            }).then(data => {
+                layer.close(index);
+                table.reload('fileListTable-id')
+            }).catch(error => {
                 //showResult('请求失败: ' + error.message, 'error');
             });
-    }
-
-    function renderFileTable(files) {
-        const tbody = document.querySelector('#fileTable tbody');
-        tbody.innerHTML = ''; // 清空现有内容
-
-        files.forEach(file => {
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-            <td>${file.fileId}</td>
-            <td>${file.fileTitle}</td>
-            <td>${file.createTime}</td>
-            <td>${file.lastModifyTime}</td>
-            <td>
-                <a class="download-btn" href="/office-online.html?fileId=${file.fileId}&fileUrl=${window.location.origin}/api/file/download/${file.fileUrl}&fileType=${file.fileTitle.substring(file.fileTitle.indexOf(".") + 1)}&title=${file.fileTitle.substring(0, file.fileTitle.indexOf("."))}&mode=view" target="_blank">
-                   查看
-                </a>
-                <a class="download-btn" href="/api/file/download/${file.fileUrl}">下载</a>
-                <a class="download-btn" href="/office-online.html?fileId=${file.fileId}&fileUrl=${window.location.origin}/api/file/download/${file.fileUrl}&fileType=${file.fileTitle.substring(file.fileTitle.indexOf(".") + 1)}&title=${file.fileTitle.substring(0, file.fileTitle.indexOf("."))}&mode=edit" target="_blank">
-                   编辑
-                </a>
-                <a class="download-btn" onclick="deleteFile('${file.fileId}')">删除</a>
-            </td>
-        `;
-            tbody.appendChild(tr);
         });
     }
 
-
-    // 页面加载时获取文件列表
-    document.addEventListener('DOMContentLoaded',fetchListFile );
-
-
-
-    // var destination = window.location.origin + '/office-online.html' +
-    //     '?fileUrl=' + window.location.origin + "/api/file/download/" + fileUrl +
-    //     '&fileType=' + title.substring(title.indexOf(".") + 1) +
-    //     '&title=' + title.substring(0, title.indexOf("."))
-
-    // 文件大小格式化函数
-    function formatFileSize(bytes) {
-        if (bytes === 0) return '0 B';
-        const k = 1024;
-        const sizes = ['B', 'KB', 'MB', 'GB'];
-        const i = Math.floor(Math.log(bytes) / Math.log(k));
-        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-    }
-
-    function deleteFile(fileId){
-        debugger
-        fetch(`/api/file/delete/${fileId}`, {
-            method: 'DELETE',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization':localStorage.getItem('off-token')
-            }
-        })
-            .then(response => {
-                if (!response.ok) {
-                    if(response.status===401){
-                        localStorage.removeItem('off-token')
-                        window.location.href = 'login.html';
-                    }else{
-                        throw new Error(`HTTP error! status: ${response.status}`);
-                    }
-
-                }
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                return response.json(); // 修改为解析JSON
-            })
-            .then(data => {
-                renderFileTable(data);
-            })
-            .catch(error => {
-                //showResult('请求失败: ' + error.message, 'error');
-            });
-    }
 </script>
 </body>
 
