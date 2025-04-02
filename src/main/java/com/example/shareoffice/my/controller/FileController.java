@@ -34,7 +34,7 @@ import java.util.stream.Collectors;
 public class FileController {
 
     // 文件存储目录
-    private static final String UPLOAD_DIR = "D:/uploads/";
+    private static final String UPLOAD_DIR = "/home/wangshubo/shareOfficeDir/";
 
     private static final String HISTORY_FILE = "localFileHistory.txt";
 

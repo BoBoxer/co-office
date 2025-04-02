@@ -49,7 +49,7 @@ public class LoginController {
                     .body(Collections.singletonMap("message", "用户名或密码错误"));
         }
 
-        String token =JwtUtils.generateToken(user.getUsername(),new HashMap<>(){{
+        String token =JwtUtils.generateToken(user.getUsername(),new HashMap(){{
             put("username", user.getUsername());
         }} );
 
