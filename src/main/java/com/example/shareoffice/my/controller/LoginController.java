@@ -1,5 +1,6 @@
 package com.example.shareoffice.my.controller;
 
+import com.example.shareoffice.utils.JwtUtils;
 import com.example.shareoffice.vo.LoginReq;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -49,7 +50,7 @@ public class LoginController {
                     .body(Collections.singletonMap("message", "用户名或密码错误"));
         }
 
-        String token =JwtUtils.generateToken(user.getUsername(),new HashMap(){{
+        String token = JwtUtils.generateToken(user.getUsername(),new HashMap(){{
             put("username", user.getUsername());
         }} );
 

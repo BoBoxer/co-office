@@ -67,7 +67,7 @@ public class Callback {
         // 用户id
         private String userid;
         // 操作类型
-        //private com.tianwen.springcloud.onlyoffice.model.documentServer.Action type;
+        private ActionType type;
     }
 
 }

@@ -1,4 +1,4 @@
-package com.example.shareoffice.vo;
+package com.example.shareoffice.entity;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;

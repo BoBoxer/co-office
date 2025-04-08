@@ -1,8 +1,9 @@
 package com.example.shareoffice.my.controller;
 
 import com.example.shareoffice.vo.Callback;
-import com.example.shareoffice.vo.LocalFilePage;
-import com.example.shareoffice.vo.LocalFileInfo;
+import com.example.shareoffice.entity.LocalFilePage;
+import com.example.shareoffice.entity.LocalFileInfo;
+import com.example.shareoffice.vo.Status;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -169,6 +170,8 @@ public class FileController {
         //String color = jsonNode.get("color").asText();
         Callback callback = new Callback();
         callback.setKey(data.get("key").asText());
+
+
         switch (data.get("status").asInt()) {
             case 1:
                 System.out.println("1");

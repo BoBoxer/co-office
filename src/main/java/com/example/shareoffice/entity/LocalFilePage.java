@@ -1,4 +1,4 @@
-package com.example.shareoffice.vo;
+package com.example.shareoffice.entity;
 
 import lombok.Data;
 
